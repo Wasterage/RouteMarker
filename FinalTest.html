@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Roads API Demo</title>
+    <style>
+      html, body, #map {
+        height: 100%;
+        margin: 0px;
+        padding: 0px
+      }
+
+      #panel {
+        position: absolute;
+        top: 5px;
+        left: 50%;
+        margin-left: -180px;
+        z-index: 5;
+        background-color: #fff;
+        padding: 5px;
+        border: 1px solid #999;
+      }
+
+      #bar {
+        width: 240px;
+        background-color: rgba(255, 255, 255, 0.75);
+        margin: 8px;
+        padding: 4px;
+        border-radius: 4px;
+      }
+
+      #autoc {
+        width: 100%;
+        box-sizing: border-box;
+      }
+    </style>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>>
+    <script
+      src="https://maps.googleapis.com/maps/api/js?libraries=drawing,places"></script>
+    <script>
+      var data = {
+  "type": "FeatureCollection",
+  "features": [{
+    "type": "Feature",
+    "properties": {},
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [-73.97056102752686, 40.74811853855757],
+        [-73.96944522857666, 40.74953279908402],
+        [-73.96798610687256, 40.75135341202851],
+        [-73.97109746932983, 40.75314146550602],
+        [-73.97472381591797, 40.75346656097219],
+        [-73.97573232650755, 40.75182481261268],
+        [-73.97721290588379, 40.750768220446936],
+        [-73.97757768630981, 40.74940275339479]
+      ]
+    }
+  }, {
+    "type": "Feature",
+    "properties": {},
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [-73.96279335021973, 40.75512452312348],
+        [-73.96549701690674, 40.75109332751696],
+        [-73.96974563598633, 40.74719193776603],
+        [-73.9726209640503, 40.74481848035928],
+        [-73.97279262542723, 40.74137193935539]
+      ]
+    }
+  }, {
+    "type": "Feature",
+    "properties": {},
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [-74.00107383728026, 40.75931800754126],
+        [-73.99519443511963, 40.757270059827206],
+        [-73.99536609649658, 40.75453936473234],
+        [-73.99888515472412, 40.75304393655622]
+      ]
+    }
+  }]
+};
+
+
+var apiKey = 'Your_Api_key';
+
+var map;
+var snappedCoordinates = [];
+var coords;
+var subArray;
+var placeIdArray = [];
+var finalArray = [];
+
+
+function initMap() {
+  var mapOptions = {
+    zoom: 13,
+    center: {
+      lat: 40.749481,
+      lng: -73.974290
+    }
+  };
+  map = new google.maps.Map(document.getElementById('map'), mapOptions);
+  map.data.addGeoJson(data);
+  var lines = data.features;
+  for (var i = 0; i < lines.length; i++) {
+    coords = lines[i].geometry.coordinates;
+    // console.log("initial array: ", coords.toString());
+    subArray = [coords.toString()];
+    // console.log('sub array: ', subArray);
+
+    runSnapToRoad(subArray);
+  }
+}
+function runSnapToRoad(path) {
+  // var pathValues = [];
+  // console.log(path);
+  // for (var i = 0; i < finalArray.length; i++) {
+    // pathValues.push(finalArray.getAt(i).toUrlValue());
+  //}
+
+  $.get('https://roads.googleapis.com/v1/snapToRoads', {
+    interpolate: true,
+    key: apiKey,
+    path: path.join('|')
+  }, function(data) {
+    processSnapToRoadResponse(data);
+    drawSnappedPolyline();
+  });
+}
+function processSnapToRoadResponse(data) {
+  snappedCoordinates = [];
+  placeIdArray = [];
+  for (var i = 0; i < data.snappedPoints.length; i++) {
+    var latlng = new google.maps.LatLng(
+      data.snappedPoints[i].location.latitude,
+      data.snappedPoints[i].location.longitude);
+    snappedCoordinates.push(latlng);
+    placeIdArray.push(data.snappedPoints[i].placeId);
+  }
+}
+
+function drawSnappedPolyline() {
+  var snappedPolyline = new google.maps.Polyline({
+    path: snappedCoordinates,
+    strokeColor: 'black',
+    strokeWeight: 3
+  });
+
+  snappedPolyline.setMap(map);
+  polylines.push(snappedPolyline);
+}
+$(window).load(initMap);
+
+//console.log(JSON.stringify(data, null, 2));
+    </script>
+  </head>
+
+  <body>
+    <div id="map"></div>
+    <div id="bar">
+      <p class="auto"><input type="text" id="autoc"/></p>
+      <p><a id="clear" href="#">Click here</a> to clear map.</p>
+    </div>
+  </body>
+</html>
